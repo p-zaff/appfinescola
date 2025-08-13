@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  mariadb:
+    image: mariadb:10.6
+    container_name: erpnext-mariadb
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=12150913Ps.
+      - MYSQL_USER=erpnext
+      - MYSQL_PASSWORD=12150913Ps.
+      - MYSQL_DATABASE=erpnext
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - erpnet
+
+  redis-cache:
+    image: redis:6.2
+    container_name: erpnext-redis-cache
+    restart: unless-stopped
+    networks:
+      - erpnet
+
+  redis-queue:
+    image: redis:6.2
+    container_name: erpnext-redis-queue
+    restart: unless-stopped
+    networks:
+      - erpnet
+
+  redis-socketio:
+    image: redis:6.2
+    container_name: erpnext-redis-socketio
+    restart: unless-stopped
+    networks:
+      - erpnet
+
+  backend:
+    image: frappe/erpnext-worker:version-15
+    container_name: erpnext-backend
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+      - redis-cache
+      - redis-queue
+      - redis-socketio
+    environment:
+      - SITE_NAME=erp.zboff.com.br
+      - DB_HOST=mariadb
+      - MYSQL_ROOT_PASSWORD=12150913Ps.
+      - ADMIN_PASSWORD=12150913Ps.
+      - INSTALL_APPS=erpnext
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+    networks:
+      - erpnet
+
+  frontend:
+    image: frappe/erpnext-nginx:version-15
+    container_name: erpnext-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+    networks:
+      - erpnet
+
+volumes:
+  mariadb_data:
+  sites:
+
+networks:
+  erpnet:
